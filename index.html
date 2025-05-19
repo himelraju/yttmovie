@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Facts & Reviews Search</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #ff6b6b, #ffa502, #70a1ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .search-box {
+            display: flex;
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-radius: 50px;
+            overflow: hidden;
+        }
+
+        #search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border-radius: 50px 0 0 50px;
+        }
+
+        #search-button {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: linear-gradient(to right, #ff6b6b, #ff7f50);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 0 50px 50px 0;
+            transition: all 0.3s ease;
+        }
+
+        #search-button:hover {
+            background: linear-gradient(to right, #ff5252, #ff7043);
+        }
+
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .video-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-card a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .video-info {
+            padding: 1.5rem;
+        }
+
+        .video-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: #ccc;
+            display: none;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: #ccc;
+            display: none;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(to right, #ff6b6b, #ff7f50);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .results-container {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Movie Facts & Reviews Search</h1>
+            <p>Search for a movie and discover facts and reviews</p>
+        </header>
+
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search for a movie (e.g., Herogiri Full Movie Facts And Review)">
+                <button id="search-button">Search</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">Searching for videos...</div>
+        <div class="no-results" id="no-results">No videos found. Try a different search term.</div>
+
+        <div class="results-container" id="results-container"></div>
+    </div>
+
+    <script>
+        // YouTube API Key - Replace with your own API key
+        const API_KEY = 'AIzaSyDg9c3THgMTJSqNDcDXYbHrmSKyzk-eVtA';
+        
+        // Format view count
+        function formatViews(views) {
+            if (views >= 1000000) {
+                return (views / 1000000).toFixed(1) + 'M';
+            } else if (views >= 1000) {
+                return (views / 1000).toFixed(1) + 'K';
+            }
+            return views;
+        }
+
+        // Format duration from ISO 8601 format
+        function formatDuration(duration) {
+            const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+            
+            const hours = (match[1] || '').replace('H', '');
+            const minutes = (match[2] || '').replace('M', '');
+            const seconds = (match[3] || '').replace('S', '');
+            
+            let result = '';
+            
+            if (hours) {
+                result += hours + ':';
+                result += minutes.padStart(2, '0') + ':';
+            } else if (minutes) {
+                result += minutes + ':';
+            } else {
+                result += '0:';
+            }
+            
+            result += seconds.padStart(2, '0');
+            
+            return result;
+        }
+
+        // Create video card element
+        function createVideoCard(video) {
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            
+            // Extract video information from the YouTube API response
+            // Handle both search results (id.videoId) and video details (id as string)
+            const videoId = typeof video.id === 'object' ? video.id.videoId : video.id;
+            const title = video.snippet.title;
+            const thumbnail = video.snippet.thumbnails.high.url;
+            const viewCount = video.statistics ? formatViews(parseInt(video.statistics.viewCount)) : 'N/A';
+            const duration = video.contentDetails ? formatDuration(video.contentDetails.duration) : 'N/A';
+            
+            card.innerHTML = `
+                <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">
+                    <img src="${thumbnail}" alt="${title}" class="thumbnail">
+                    <div class="video-info">
+                        <h3 class="video-title">${title}</h3>
+                        <div class="badge">Facts & Review</div>
+                        <div class="video-stats">
+                            <span>${viewCount} views</span>
+                            <span>${duration}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+            return card;
+        }
+
+        // Search function using YouTube Data API
+        function searchVideos(query) {
+            const resultsContainer = document.getElementById('results-container');
+            const loadingElement = document.getElementById('loading');
+            const noResultsElement = document.getElementById('no-results');
+            
+            // Clear previous results
+            resultsContainer.innerHTML = '';
+            
+            // Show loading
+            loadingElement.style.display = 'block';
+            noResultsElement.style.display = 'none';
+            
+            // Construct search query to include 'Facts And Review'
+            const searchQuery = `${query} "Facts And Review"`;
+            
+            // First API call to search for videos
+            fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&maxResults=50&key=${API_KEY}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.items.length === 0) {
+                        // No results found
+                        loadingElement.style.display = 'none';
+                        noResultsElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    // Extract video IDs
+                    const videoIds = data.items.map(item => item.id.videoId).join(',');
+                    
+                    // Second API call to get video details including statistics and content details
+                    return fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoIds}&key=${API_KEY}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(videoData => {
+                            // Filter videos that contain 'Facts And Review' in the title
+                            const filteredVideos = videoData.items.filter(video => {
+                                return video.snippet.title.toLowerCase().includes('facts and review');
+                            });
+                            
+                            // Sort by view count (descending)
+                            filteredVideos.sort((a, b) => {
+                                const viewsA = parseInt(a.statistics.viewCount) || 0;
+                                const viewsB = parseInt(b.statistics.viewCount) || 0;
+                                return viewsB - viewsA;
+                            });
+                            
+                            // Hide loading
+                            loadingElement.style.display = 'none';
+                            
+                            if (filteredVideos.length === 0) {
+                                // Show no results message
+                                noResultsElement.style.display = 'block';
+                            } else {
+                                // Display results
+                                filteredVideos.forEach(video => {
+                                    resultsContainer.appendChild(createVideoCard(video));
+                                });
+                            }
+                        });
+                })
+                .catch(error => {
+                    console.error('Error fetching data from YouTube API:', error);
+                    loadingElement.style.display = 'none';
+                    noResultsElement.textContent = 'An error occurred while fetching videos. Please try again later.';
+                    noResultsElement.style.display = 'block';
+                });
+        }
+
+        // Event listeners
+        document.getElementById('search-button').addEventListener('click', () => {
+            const query = document.getElementById('search-input').value.trim();
+            if (query) {
+                searchVideos(query);
+            }
+        });
+
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = document.getElementById('search-input').value.trim();
+                if (query) {
+                    searchVideos(query);
+                }
+            }
+        });
+
+        // Initial search with example
+        window.addEventListener('load', () => {
+            document.getElementById('search-input').value = 'Herogiri';
+            searchVideos('Herogiri');
+        });
+    </script>
+</body>
+</html>
